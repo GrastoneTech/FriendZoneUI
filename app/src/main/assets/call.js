@@ -2,19 +2,30 @@ var peer = null;
 
 function init(pInitiator){
 
+    var video = document.querySelector('#remote');
+    var calldrop = document.querySelector('#calldrop');
+    calldrop.onclick = function(){
+        peer.destroy();
+        Android.next();
+    }
+
+    ownFace();
+
+    video.style.opacity=0;
+
     console.log("Init Called Inside"+pInitiator);
-    peer = new SimplePeer({ initiator: pInitiator,trickle: false});
+    peer = new SimplePeer({ initiator: pInitiator,trickle: true});
 
     peer.on('stream', stream => {
-        var video = document.querySelector('#remote')
+       // var video = document.querySelector('#remote')
         if ('srcObject' in video) {
             video.srcObject = stream
         } else {
             video.src = window.URL.createObjectURL(stream) 
         }
         video.play();
-
-        console.log("Streamed started....")
+        console.log("Streamed started....");
+        video.style.opacity=1;
     })
 
     peer.on('signal', data => {
@@ -63,3 +74,16 @@ function addMedia(stream) {
 
 
 
+function ownFace(){
+    var video = document.querySelector("#ownFace");
+
+    if (navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function (stream) {
+          video.srcObject = stream;
+        })
+        .catch(function (err0r) {
+          console.log("Something went wrong!");
+        });
+    }
+}

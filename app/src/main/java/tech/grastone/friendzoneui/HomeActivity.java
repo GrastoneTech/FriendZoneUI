@@ -1,15 +1,12 @@
 package tech.grastone.friendzoneui;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.content.SharedPreferences;
-import android.net.http.SslError;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.PermissionRequest;
-import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -18,13 +15,16 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.json.JSONObject;
-
-import java.util.HashMap;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -32,13 +32,13 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import tech.grastone.friendzoneui.util.JSInterface;
-import tech.grastone.friendzoneui.util.JavascriptInterface;
-import tech.grastone.friendzoneui.util.MatchingUserEntity;
 import tech.grastone.friendzoneui.util.MessageBean;
 import tech.grastone.friendzoneui.util.RequestBody;
+import tech.grastone.friendzoneui.util.Util;
 
 public class HomeActivity extends AppCompatActivity {
-
+    private static final int STORAGE_PERMISSION_CODE = 1;
+    private final String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.RECORD_AUDIO};
     private FrameLayout startFrame, loadingFrame, videoFrame, ownFaceFrame;
     private Button startMatchingBtn;
     private WebView videoWV;
@@ -79,7 +79,13 @@ public class HomeActivity extends AppCompatActivity {
 
 
         startMatchingBtn.setOnClickListener(v -> {
-            init();
+
+
+            if (checkPermissions()) {
+                init();
+            } else {
+                grantPermissions();
+            }
         });
     }
 
@@ -90,7 +96,7 @@ public class HomeActivity extends AppCompatActivity {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
             okHttpClient = builder.build();
             //Request request = new Request.Builder().url("ws://116.73.15.125:8080/LiveMatchingEngine/messenger/"+uuid).build();
-            Request request = new Request.Builder().url("ws://40.114.123.146/LiveMatchingEngine/messenger/" + uuid).build();
+            Request request = new Request.Builder().url("ws://" + Util.BASE_PATH + "/messenger/" + uuid).build();
             webSocket = okHttpClient.newWebSocket(request, new WebSocketListener() {
                 @Override
                 public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
@@ -248,6 +254,11 @@ public class HomeActivity extends AppCompatActivity {
 
 
             }
+
+            @Override
+            public void next() {
+
+            }
         }, "Android");
 
 
@@ -265,6 +276,62 @@ public class HomeActivity extends AppCompatActivity {
         videoWV.post(() -> {
             videoWV.evaluateJavascript(scriptName, null);
         });
+    }
+
+    private void grantPermissions() {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(HomeActivity.this, permission) != PackageManager.PERMISSION_GRANTED) {
+                System.out.println("Granting permission for " + permission);
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                    new AlertDialog.Builder(this)
+                            .setTitle("Permission needed")
+                            .setMessage("This permission is needed because of this and that")
+                            .setPositiveButton("ok", (dialog, which) -> ActivityCompat.requestPermissions(HomeActivity.this,
+                                    new String[]{permission}, STORAGE_PERMISSION_CODE))
+                            .setNegativeButton("cancel", (dialog, which) -> dialog.dismiss())
+                            .create().show();
+                } else {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{permission}, STORAGE_PERMISSION_CODE);
+                }
+            }
+
+        }
+    }
+
+    private boolean checkPermissions() {
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(HomeActivity.this, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission GRANTED", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        videoWV.clearCache(true);
+        videoWV.clearHistory();
+        videoWV.onPause();
+        videoWV.removeAllViews();
+        videoWV.destroyDrawingCache();
+        videoWV.pauseTimers();
+        videoWV = null;
+        super.onStop();
+        finish();
     }
 
 

@@ -1,4 +1,67 @@
-#remote{
-    height: 100%;
-    width: 100%;
+ html, body {
+	margin: 0;
+	padding: 0;
 }
+
+#remote{
+    position: absolute;
+   	width: 100%;
+   	height: 100%;
+   	object-fit: cover;
+    opacity:0;
+}
+
+.secondary-cam {
+	position: absolute;
+	width: 20%;
+	heigh:30%;
+}
+
+.call-drop {
+	position: absolute;
+	width: 50px;
+	bottom: 20px;
+	right: 50%;
+	cursor: pointer;
+}
+
+/*
+.call-drop {
+	position: absolute;
+	width: 50px;
+	bottom: 20px;
+	right: 50%;
+	cursor: pointer;
+}
+
+.cam-action{
+	right: 20px;
+    bottom: 20px;
+    position: absolute;
+}
+
+.camera{
+	width: 40px;
+    text-align: center;
+    line-height: 20px;
+    height: 40px;
+    font-size: 21px;
+    padding: 10px;
+    margin: 10px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.mic{
+	width: 40px;
+    text-align: center;
+    line-height: 20px;
+    height: 40px;
+    font-size: 21px;
+    padding: 10px;
+    margin: 10px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}*/

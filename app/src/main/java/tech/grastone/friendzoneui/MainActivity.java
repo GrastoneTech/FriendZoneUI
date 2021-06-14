@@ -1,23 +1,32 @@
 package tech.grastone.friendzoneui;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Toast;
 
-import java.io.IOException;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import tech.grastone.friendzoneui.util.Util;
+
 
 public class MainActivity extends AppCompatActivity {
+
+
+    private FirebaseRemoteConfig mFirebaseRemoteConfig;
+    private String serverURL;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // loadParams();
         SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
         String uuid = sharedPreferences.getString("UUID", "");
         OkHttpClient client = new OkHttpClient();
@@ -26,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
         if (uuid.equals("")) {
             new Thread(() -> {
                 //Request request = new Request.Builder().url("http://116.73.15.125:8080/LiveMatchingEngine/GetUniqueId").build();
-                Request request = new Request.Builder().url("http://40.114.123.146/LiveMatchingEngine/GetUniqueId").build();
+                Request request = new Request.Builder().url("http://" + Util.BASE_PATH + "/GetUniqueId").build();
                 String uniqueId = "";
                 try (Response response = client.newCall(request).execute()) {
                     uniqueId = response.body().string();
@@ -48,4 +57,6 @@ public class MainActivity extends AppCompatActivity {
         startActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(startActivityIntent);
     }
+
+
 }
