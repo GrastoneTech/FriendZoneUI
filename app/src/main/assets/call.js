@@ -5,16 +5,15 @@ function init(pInitiator){
     var video = document.querySelector('#remote');
     var calldrop = document.querySelector('#calldrop');
     calldrop.onclick = function(){
-        peer.destroy();
-        Android.next();
+       close();
     }
 
     ownFace();
 
-    video.style.opacity=0;
+//    video.style.opacity=0;
 
     console.log("Init Called Inside"+pInitiator);
-    peer = new SimplePeer({ initiator: pInitiator,trickle: true});
+    peer = new SimplePeer({ initiator: pInitiator,trickle: false});
 
     peer.on('stream', stream => {
        // var video = document.querySelector('#remote')
@@ -47,7 +46,23 @@ function init(pInitiator){
       peer.on('data', data => {
        console.log("data"+data);
       })
+
+      peer.on('close', () => {close();})
+
+     // peer.on('error', (err) => {close();})
     
+}
+
+
+function close(){
+        peer.destroy();
+        try{
+        Android.next();
+        }catch(e){
+            console.log(e)
+        }
+
+
 }
 
 

@@ -3,9 +3,13 @@ package tech.grastone.friendzoneui;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.view.animation.AnimationUtils;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import okhttp3.OkHttpClient;
@@ -19,12 +23,19 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private String serverURL;
+    private TextView splashName;
+    private LottieAnimationView animationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        splashName = findViewById(R.id.frienzoneTW);
+        animationView = findViewById(R.id.animationView);
+
+        splashName.startAnimation(AnimationUtils.loadAnimation(this, android.R.anim.fade_in));
+
 
         // loadParams();
         SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
@@ -52,10 +63,13 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        new Handler().postDelayed(() -> {
+            Intent startActivityIntent = new Intent(MainActivity.this, HomeActivity.class);
+            startActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(startActivityIntent);
+            finish();
+        }, 3400);
 
-        Intent startActivityIntent = new Intent(this, HomeActivity.class);
-        startActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(startActivityIntent);
     }
 
 

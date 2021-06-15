@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
@@ -63,7 +64,7 @@ public class HomeActivity extends AppCompatActivity {
         videoFrame = findViewById(R.id.videoFrame);
         ownFaceFrame = findViewById(R.id.ownFaceFrame);
 
-        startMatchingBtn = findViewById(R.id.startMatchingBtn);
+//        startMatchingBtn = findViewById(R.id.startMatchingBtn);
         videoWV = findViewById(R.id.videoWV);
         loadingMsgTW = findViewById(R.id.loadingMsgTW);
 
@@ -78,9 +79,15 @@ public class HomeActivity extends AppCompatActivity {
         startFrame.setVisibility(View.VISIBLE);
 
 
-        startMatchingBtn.setOnClickListener(v -> {
+       /* startMatchingBtn.setOnClickListener(v -> {
+            if (checkPermissions()) {
+                init();
+            } else {
+                grantPermissions();
+            }
+        });*/
 
-
+        startFrame.setOnClickListener(v -> {
             if (checkPermissions()) {
                 init();
             } else {
@@ -91,82 +98,82 @@ public class HomeActivity extends AppCompatActivity {
 
     private void init() {
         try {
-
-
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            okHttpClient = builder.build();
-            //Request request = new Request.Builder().url("ws://116.73.15.125:8080/LiveMatchingEngine/messenger/"+uuid).build();
-            Request request = new Request.Builder().url("ws://" + Util.BASE_PATH + "/messenger/" + uuid).build();
-            webSocket = okHttpClient.newWebSocket(request, new WebSocketListener() {
-                @Override
-                public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(HomeActivity.this, "Connection Closed" + reason, Toast.LENGTH_SHORT).show();
-                    });
-                }
-
-                @Override
-                public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-                    try {
-                        messageHandler(text);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(HomeActivity.this, "Connected to the server", Toast.LENGTH_SHORT).show();
-                    });
-                }
-
-                @Override
-                public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(HomeActivity.this, "Closing session =" + reason, Toast.LENGTH_SHORT).show();
-                    });
-                }
-
-                @Override
-                public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @Nullable Response response) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(HomeActivity.this, "Failed session =" + t.getMessage(), Toast.LENGTH_LONG).show();
-                        t.printStackTrace();
-                    });
-                }
-            });
-
-            //Start Matching
-            RequestBody requestBody = new RequestBody();
-            requestBody.setId(Integer.parseInt(uuid));
-            requestBody.setGender((byte) 2);
-            requestBody.setIntrestedGender((byte) 2);
-            requestBody.setMsgType("START_MATCHING");
-            requestBody.setMatchingPresense(true);
-            requestBody.setKeywords(new String[]{});
-            requestBody.setMsgText("START_MATCHING");
-            requestBody.setServiceId(1);
-            requestBody.setServiceType("START_MATCHING");
-            MessageBean bean = new MessageBean("" + uuid, "SYSTEM", requestBody);
-
-            try {
-                String str = new Gson().toJson(bean);
-                System.out.println("============================>" + str);
-                webSocket.send(str);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            startFrame.setVisibility(View.GONE);
-            loadingFrame.setVisibility(View.VISIBLE);
-
-            //Exchanging peer
-
-            // close
-
+            initializeWS();
+            startMatching();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void startMatching() {
+        //Start Matching
+        RequestBody requestBody = new RequestBody();
+        requestBody.setId(Integer.parseInt(uuid));
+        requestBody.setGender((byte) 2);
+        requestBody.setIntrestedGender((byte) 2);
+        requestBody.setMsgType("START_MATCHING");
+        requestBody.setMatchingPresense(true);
+        requestBody.setKeywords(new String[]{});
+        requestBody.setMsgText("START_MATCHING");
+        requestBody.setServiceId(1);
+        requestBody.setServiceType("START_MATCHING");
+        MessageBean bean = new MessageBean("" + uuid, "SYSTEM", requestBody);
+
+        try {
+            String str = new Gson().toJson(bean);
+            System.out.println("============================>" + str);
+            webSocket.send(str);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        startFrame.setVisibility(View.GONE);
+        loadingFrame.setVisibility(View.VISIBLE);
+    }
+
+    private void initializeWS() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        okHttpClient = builder.build();
+        //Request request = new Request.Builder().url("ws://116.73.15.125:8080/LiveMatchingEngine/messenger/"+uuid).build();
+        Request request = new Request.Builder().url("ws://" + Util.BASE_PATH + "/messenger/" + uuid).build();
+        webSocket = okHttpClient.newWebSocket(request, new WebSocketListener() {
+            @Override
+            public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HomeActivity.this, "Connection Closed" + reason, Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
+                try {
+                    messageHandler(text);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onOpen(@NotNull WebSocket webSocket, @NotNull Response response) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HomeActivity.this, "Connected to the server", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HomeActivity.this, "Closing session =" + reason, Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @Nullable Response response) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HomeActivity.this, "Failed session =" + t.getMessage(), Toast.LENGTH_LONG).show();
+                    t.printStackTrace();
+                });
+            }
+        });
     }
 
     private void messageHandler(String text) {
@@ -206,7 +213,7 @@ public class HomeActivity extends AppCompatActivity {
         startFrame.setVisibility(View.GONE);
         loadingFrame.setVisibility(View.GONE);
         videoFrame.setVisibility(View.VISIBLE);
-        ownFaceFrame.setVisibility(View.VISIBLE);
+        //ownFaceFrame.setVisibility(View.VISIBLE);
         setupWebView();
 
         videoWV.setWebViewClient(new WebViewClient() {
@@ -256,7 +263,27 @@ public class HomeActivity extends AppCompatActivity {
             }
 
             @Override
+            @android.webkit.JavascriptInterface()
             public void next() {
+                try {
+                    runOnUiThread(() -> {
+                        Toast.makeText(HomeActivity.this, "Loading next value", Toast.LENGTH_SHORT).show();
+                        startFrame.setVisibility(View.GONE);
+                        loadingFrame.setVisibility(View.GONE);
+                        videoFrame.setVisibility(View.GONE);
+                        ownFaceFrame.setVisibility(View.GONE);
+
+                        loadingFrame.setVisibility(View.VISIBLE);
+                        new Handler().postDelayed(() -> {
+                            startMatching();
+                        }, 5000);
+
+                    });
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
 
             }
         }, "Android");
