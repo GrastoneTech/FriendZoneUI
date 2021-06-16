@@ -91,7 +91,6 @@
         android:layout_height="match_parent"
         android:visibility="visible"
         android:id="@+id/videoFrame">
-
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -99,7 +98,35 @@
             <WebView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+
                 android:id="@+id/videoWV" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:layout_margin="30dp"
+                android:orientation="vertical">
+
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/swipeupView"
+                    android:layout_width="100dp"
+                    android:layout_height="60dp"
+                    app:lottie_autoPlay="true"
+                    app:lottie_fileName="animated/swipe-up.json"
+                    app:lottie_loop="true" />
+
+                <TextView
+                    android:id="@+id/swipeUpToSkipTW"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/animationView"
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerVertical="true"
+                    android:text="Swipe up to skip"></TextView>
+            </LinearLayout>
         </RelativeLayout>
     </FrameLayout>
 
