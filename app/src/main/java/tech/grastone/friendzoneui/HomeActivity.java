@@ -1,6 +1,7 @@
 package tech.grastone.friendzoneui;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -22,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +46,7 @@ public class HomeActivity extends AppCompatActivity {
     private Button startMatchingBtn;
     private WebView videoWV;
     private TextView loadingMsgTW;
+    private LottieAnimationView backToStartLAV;
 
     private OkHttpClient okHttpClient;
     public WebSocket webSocket;
@@ -64,6 +67,7 @@ public class HomeActivity extends AppCompatActivity {
         videoFrame = findViewById(R.id.videoFrame);
         ownFaceFrame = findViewById(R.id.ownFaceFrame);
 
+        backToStartLAV = findViewById(R.id.backToStartLAV);
 //        startMatchingBtn = findViewById(R.id.startMatchingBtn);
         videoWV = findViewById(R.id.videoWV);
         loadingMsgTW = findViewById(R.id.loadingMsgTW);
@@ -93,6 +97,41 @@ public class HomeActivity extends AppCompatActivity {
             } else {
                 grantPermissions();
             }
+        });
+
+        backToStartLAV.setOnClickListener(v -> {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Are you really want to stop matching?")
+                    .setCancelable(false)
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            webSocket.close(1000, "GOOD BYE");
+                            webSocket = null;
+                            if (videoWV != null) {
+                                videoWV.clearCache(true);
+                                videoWV.clearHistory();
+                                videoWV.onPause();
+                                videoWV.removeAllViews();
+                                videoWV.destroyDrawingCache();
+                                videoWV.pauseTimers();
+                            }
+
+                            startFrame.setVisibility(View.VISIBLE);
+                            loadingFrame.setVisibility(View.GONE);
+                            videoFrame.setVisibility(View.GONE);
+                            ownFaceFrame.setVisibility(View.GONE);
+                        }
+                    })
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            dialog.cancel();
+                        }
+                    });
+            AlertDialog alert = builder.create();
+            alert.show();
+
+
         });
     }
 

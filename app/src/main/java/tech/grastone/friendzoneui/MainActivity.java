@@ -4,13 +4,21 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+
+import java.util.HashMap;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -35,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         animationView = findViewById(R.id.animationView);
 
         splashName.startAnimation(AnimationUtils.loadAnimation(this, android.R.anim.fade_in));
-
+        basicReadWrite();
 
         // loadParams();
         SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
@@ -70,6 +78,30 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }, 3400);
 
+    }
+
+    public void basicReadWrite() {
+        // [START write_message]
+        // Write a message to the database
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference();
+
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                HashMap<String, Object> dataMap = (HashMap<String, Object>) dataSnapshot.getValue();
+                System.out.println("111111111111111111111111111111111111111111" + dataMap);
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w("TAG", "Failed to read value.", error.toException());
+            }
+        });
+        // [END read_message]
     }
 
 

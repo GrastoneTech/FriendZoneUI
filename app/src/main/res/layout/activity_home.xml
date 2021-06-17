@@ -55,7 +55,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
+        android:visibility="visible"
         android:background="#3490dc"
         android:id="@+id/loadingFrame">
 
@@ -63,6 +63,15 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/backToStartLAV"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_margin="10dp"
+                app:lottie_autoPlay="true"
+                app:lottie_fileName="animated/arrow-left-icon.json"
+                app:lottie_loop="true" />
 
             <com.airbnb.lottie.LottieAnimationView
                 android:id="@+id/animationView"
@@ -89,7 +98,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible"
+        android:visibility="gone"
         android:id="@+id/videoFrame">
         <RelativeLayout
             android:layout_width="match_parent"

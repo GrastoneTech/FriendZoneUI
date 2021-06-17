@@ -10,7 +10,7 @@ function init(pInitiator){
 
     ownFace();
 
-//    video.style.opacity=0;
+//    ///opacity=0;
 
     console.log("Init Called Inside"+pInitiator);
     peer = new SimplePeer({ initiator: pInitiator,trickle: false});
