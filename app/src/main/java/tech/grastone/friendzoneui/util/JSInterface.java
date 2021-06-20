@@ -6,4 +6,7 @@ public interface JSInterface {
 
     @android.webkit.JavascriptInterface()
     void next();
+
+    @android.webkit.JavascriptInterface()
+    void onException();
 }

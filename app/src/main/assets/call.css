@@ -13,18 +13,18 @@
 }
 
 .secondary-cam {
-	position: absolute;
+	position: fixed;
 	width: 20%;
-	heigh:30%;
+	/*height:30%;*/
 }
 
-.call-drop {
+/*.call-drop {
 	position: absolute;
 	width: 50px;
 	bottom: 20px;
 	right: 50%;
 	cursor: pointer;
-}
+}*/
 
 /*
 .call-drop {
