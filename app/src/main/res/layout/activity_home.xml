@@ -6,8 +6,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".HomeActivity">
 
-
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -110,7 +108,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
                 android:paddingTop="30dp"
-
+                android:visibility="gone"
                 android:shadowColor="@color/black"
                 android:shadowRadius="10"
                 android:text="00:00:00"
@@ -135,5 +133,5 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         ads:adSize="BANNER"
-        ads:adUnitId="ca-app-pub-3940256099942544/6300978111"></com.google.android.gms.ads.AdView>
+        ads:adUnitId="ca-app-pub-8438566450366927/8505669966"></com.google.android.gms.ads.AdView>
 </RelativeLayout>

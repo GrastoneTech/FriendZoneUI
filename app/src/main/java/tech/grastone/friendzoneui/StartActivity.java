@@ -1,8 +1,11 @@
 package tech.grastone.friendzoneui;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -25,64 +28,17 @@ public class StartActivity extends AppCompatActivity {
     private FrameLayout startFrame;
     private AdView mAdView;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public static boolean isDeviceOnline(Context context) {
 
-        setContentView(R.layout.activity_start);
+        ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        boolean isOnline = (networkInfo != null && networkInfo.isConnected());
+        if (!isOnline)
+            Toast.makeText(context, " No internet Connection ", Toast.LENGTH_SHORT).show();
 
-        MobileAds.initialize(this, new OnInitializationCompleteListener() {
-            @Override
-            public void onInitializationComplete(InitializationStatus initializationStatus) {
-            }
-        });
-
-        mAdView = findViewById(R.id.startBannerAd);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
-
-        startFrame = findViewById(R.id.startFrame);
-        startFrame.setOnClickListener(v -> {
-            if (checkPermissions()) {
-                Intent startActivityIntent = new Intent(StartActivity.this, HomeActivity.class);
-                startActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(startActivityIntent);
-                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-                finish();
-            } else {
-                grantPermissions();
-            }
-        });
-
-        super.onCreate(savedInstanceState);
-
-        System.out.println("On create called");
+        return isOnline;
     }
 
-    @Override
-    protected void onResume() {
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
-        System.out.println("Resume");
-        super.onResume();
-    }
-
-    @Override
-    protected void onRestart() {
-        System.out.println("Restarted");
-        super.onRestart();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        System.out.println("Paused");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        System.out.println("Destroyed");
-    }
 
     private void grantPermissions() {
         for (String permission : permissions) {
@@ -124,6 +80,45 @@ public class StartActivity extends AppCompatActivity {
                 Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_start);
+
+        isDeviceOnline(this);
+
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+
+        mAdView = findViewById(R.id.startBannerAd);
+        //mAdView.setAdUnitId("ca-app-pub-8438566450366927/8505669966");
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
+        startFrame = findViewById(R.id.startFrame);
+        startFrame.setOnClickListener(v -> {
+
+            if (checkPermissions()) {
+                if (isDeviceOnline(this)) {
+                    Intent startActivityIntent = new Intent(StartActivity.this, HomeActivity.class);
+                    startActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(startActivityIntent);
+                    overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                    finish();
+                }
+            } else {
+                grantPermissions();
+            }
+
+        });
+
+
+        System.out.println("TTT On create called STARTACTIVITY");
     }
 
 

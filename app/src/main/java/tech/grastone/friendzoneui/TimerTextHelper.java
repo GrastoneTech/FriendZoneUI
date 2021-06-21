@@ -40,6 +40,7 @@ public class TimerTextHelper implements Runnable {
         this.elapsedTime = System.currentTimeMillis() - startTime;
         handler.removeCallbacks(this);
 
+
     }
 
     public long getElapsedTime() {

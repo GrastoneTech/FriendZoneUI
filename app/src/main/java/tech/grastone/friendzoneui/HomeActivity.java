@@ -1,6 +1,5 @@
 package tech.grastone.friendzoneui;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -19,23 +18,29 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.transition.Slide;
 import androidx.transition.TransitionManager;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.gson.Gson;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -48,10 +53,14 @@ import tech.grastone.friendzoneui.util.RequestBody;
 import tech.grastone.friendzoneui.util.Util;
 
 public class HomeActivity extends AppCompatActivity {
+    private final int NEXT_VALUE_MIN = 3;
+    private final int NEXT_VALUE_MAX = 7;
+
 
     private FrameLayout loadingFrame, videoFrame, ownFaceFrame;
     private WebView videoWV;
     private TextView loadingMsgTW;
+
     private LottieAnimationView backToStartLAV;
 
     private OkHttpClient okHttpClient;
@@ -60,12 +69,26 @@ public class HomeActivity extends AppCompatActivity {
     private Gson gson;
     private MessageBean currBean = null;
     private SwipeListener swipeListener;
-    private TimerTextHelper timerTextHelper = null;
+    InterstitialAd mInterstitialAd;
+    //    private TimerTextHelper timerTextHelper = null;
     private AdView mAdView;
+    private InterstitialAd interstitial;
+    private int nextValue = getRandomInRange(NEXT_VALUE_MIN, NEXT_VALUE_MAX);
+    private int counter = 0;
+
+    public static int getRandomInRange(int start, int end) {
+        //return start + new Random().nextInt(end - start + 1);
+        return ThreadLocalRandom.current().nextInt(start, end);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
+        createView();
+        super.onCreate(savedInstanceState);
+    }
+
+    private void createView() {
         gson = new Gson();
         SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
         uuid = sharedPreferences.getString("UUID", "");
@@ -73,7 +96,6 @@ public class HomeActivity extends AppCompatActivity {
         loadingFrame = findViewById(R.id.loadingFrame);
         videoFrame = findViewById(R.id.videoFrame);
         ownFaceFrame = findViewById(R.id.ownFaceFrame);
-
         backToStartLAV = findViewById(R.id.backToStartLAV);
         videoWV = findViewById(R.id.videoWV);
         loadingMsgTW = findViewById(R.id.loadingMsgTW);
@@ -89,68 +111,116 @@ public class HomeActivity extends AppCompatActivity {
         });
 
         mAdView = findViewById(R.id.homeBannerAd);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
+        //  mAdView.setAdUnitId("ca-app-pub-8438566450366927/8505669966");
+        AdRequest adRequest2 = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest2);
+        loadInterstitialAd();
+
 
         runOnUiThread(() -> {
             new Handler().postDelayed(() -> init(), 5000);
-
         });
 
         backToStart();
+    }
 
-        super.onCreate(savedInstanceState);
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(this, "ca-app-pub-8438566450366927/5632094610", adRequest, new InterstitialAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                mInterstitialAd = interstitialAd;
+                Log.i("TAG", "onAdLoaded");
+
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        // Called when fullscreen content is dismissed.
+                        Log.d("TAG", "The ad was dismissed.");
+
+                        new Handler().postDelayed(() -> {
+                            startMatching();
+                        }, 5000);
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                        // Called when fullscreen content failed to show.
+                        Log.d("TAG", "The ad failed to show.");
+                        new Handler().postDelayed(() -> {
+                            startMatching();
+                        }, 5000);
+                    }
+
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+                        // Called when fullscreen content is shown.
+                        // Make sure to set your reference to null so you don't
+                        // show it a second time.
+                        mInterstitialAd = null;
+                        Log.d("TAG", "The ad was shown.");
+//                        new Handler().postDelayed(() -> {
+//                            startMatching();
+//                        }, 5000);
+                    }
+                });
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                // Handle the error
+                Log.i("TAG", loadAdError.getMessage());
+                mInterstitialAd = null;
+                new Handler().postDelayed(() -> {
+                    startMatching();
+                }, 5000);
+            }
+        });
+    }
+
+    private void showInterstitialAd() {
+        if (mInterstitialAd != null) {
+            mInterstitialAd.show(HomeActivity.this);
+            nextValue = getRandomInRange(NEXT_VALUE_MIN, NEXT_VALUE_MAX);
+            //counter = 0;
+            // loadInterstitialAd();
+        } else {
+            counter++;
+            Log.d("TAG", "The interstitial ad wasn't ready yet.");
+            Log.d("TAG", "The counter is  " + counter);
+            Log.d("TAG", "The next is  " + nextValue);
+            if (counter >= nextValue) {
+                Log.d("TAG", "The add is gonna load");
+
+                loadInterstitialAd();
+                nextValue = getRandomInRange(NEXT_VALUE_MIN, NEXT_VALUE_MAX);
+                counter = 0;
+            }
+
+            new Handler().postDelayed(() -> {
+                startMatching();
+            }, 5000);
+        }
     }
 
     private void backToStart() {
         backToStartLAV.setOnClickListener(v -> {
             try {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage("Are you really want to stop matching?")
-                        .setCancelable(false)
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                webSocket.close(1000, "GOOD BYE");
-                                webSocket = null;
-
-                                if (videoWV != null) {
-                                    videoWV.clearCache(true);
-                                    videoWV.clearHistory();
-                                    videoWV.onPause();
-                                    videoWV.removeAllViews();
-                                    videoWV.destroyDrawingCache();
-                                    videoWV.pauseTimers();
-                                }
-
-//                            startFrame.setVisibility(View.VISIBLE);
-                                loadingFrame.setVisibility(View.GONE);
-                                mAdView.setVisibility(View.GONE);
-                                videoFrame.setVisibility(View.GONE);
-                                ownFaceFrame.setVisibility(View.GONE);
-
-                                startActivity(new Intent(HomeActivity.this, StartActivity.class));
-                                overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
-                                finish();
-                                finishAndRemoveTask();
-                            }
-                        })
-                        .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.cancel();
-                            }
-                        });
-                AlertDialog alert = builder.create();
-                alert.show();
+                backToStartImpl();
             } catch (Exception e) {
                 onException();
             }
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.v("Example", "onResume");
+    private void backToStartImpl() {
+        closingWebview();
+        Intent startActivityIntent = new Intent(HomeActivity.this, StartActivity.class);
+        startActivityIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(startActivityIntent);
+        //startActivity(new Intent(HomeActivity.this, StartActivity.class));
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right);
+        finish();
     }
 
     private void init() {
@@ -162,9 +232,29 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
+    private void closingWebview() {
+        if (webSocket != null) {
+            webSocket.close(1000, "GOOD BYE");
+            webSocket = null;
+        }
+        //
+        if (videoWV != null) {
+            videoWV.clearCache(true);
+            videoWV.clearHistory();
+            videoWV.onPause();
+            videoWV.removeAllViews();
+            videoWV.destroyDrawingCache();
+//                                    videoWV.pauseTimers();
+            videoWV.loadUrl("");
+//            videoWV = null;
+        }
+    }
+
     private void startMatching() {
         //Start Matching
+        loadingMsgTW.setText("Waiting for match...");
         try {
+            loadingMsgTW.setText("Waiting for match...");
             RequestBody requestBody = new RequestBody();
             requestBody.setId(Integer.parseInt(uuid));
             requestBody.setGender((byte) 2);
@@ -232,6 +322,7 @@ public class HomeActivity extends AppCompatActivity {
 //                    runOnUiThread(() -> {
 //                        Toast.makeText(HomeActivity.this, "Closing session =" + reason, Toast.LENGTH_SHORT).show();
 //                    });
+
                 }
 
                 @Override
@@ -240,12 +331,53 @@ public class HomeActivity extends AppCompatActivity {
 //                        Toast.makeText(HomeActivity.this, "Failed session =" + t.getMessage(), Toast.LENGTH_LONG).show();
 //                        t.printStackTrace();
 //                    });
+
+                    onException();
                 }
             });
         } catch (Exception e) {
             e.printStackTrace();
             onException();
         }
+    }
+
+    private void recieveSDP(MessageBean bean) {
+        try {
+            callJavascriptFunction("javascript:recieveSDP('" + bean.getMessageBody().getMsgText() + "')");
+        } catch (Exception e) {
+            e.printStackTrace();
+            onException();
+        }
+    }
+
+
+    private void strangerMatched(MessageBean bean) {
+        try {
+            currBean = bean;
+            loadingFrame.setVisibility(View.GONE);
+            mAdView.setVisibility(View.GONE);
+            TransitionManager.beginDelayedTransition(videoFrame, new Slide(Gravity.RIGHT));
+            videoFrame.setVisibility(View.VISIBLE);
+            setupWebView();
+            videoWV.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    callJavascriptFunction("javascript:init(" + bean.getMessageBody().isInitiator() + ")");
+                }
+            });
+            findViewById(R.id.swipeupView).setVisibility(View.GONE);
+            findViewById(R.id.swipeUpToSkipTW).setVisibility(View.GONE);
+            new Handler().postDelayed(() -> {
+                swipeListener = new SwipeListener(videoWV);
+                findViewById(R.id.swipeupView).setVisibility(View.VISIBLE);
+                findViewById(R.id.swipeUpToSkipTW).setVisibility(View.VISIBLE);
+            }, 5000);
+        } catch (Exception e) {
+            e.printStackTrace();
+            onException();
+        }
+
+
     }
 
     private void messageHandler(String text) {
@@ -257,7 +389,12 @@ public class HomeActivity extends AppCompatActivity {
                 switch (bean.getMessageBody().getMsgType()) {
                     case "STRANGER_MATCHED":
                         runOnUiThread(() -> {
-                            strangerMatched(bean);
+                            loadingMsgTW.setText("You got a match");
+                            new Handler().postDelayed(() -> {
+                                strangerMatched(bean);
+                            }, 2000);
+
+
                             //Toast.makeText(HomeActivity.this, "You have matched with == " + bean.getMessageBody().getMatchedWith(), Toast.LENGTH_SHORT).show();
                         });
                         break;
@@ -276,59 +413,25 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void recieveSDP(MessageBean bean) {
-        try {
-            //System.out.println("Recieved sdp --->" + bean.getMessageBody().getMsgText());
-            callJavascriptFunction("javascript:recieveSDP('" + bean.getMessageBody().getMsgText() + "')");
-        } catch (Exception e) {
-            e.printStackTrace();
-            onException();
-
-        }
-
-
+    private void callJavascriptFunction(String scriptName) {
+        System.out.println("---------------------------> Calling javascript  function");
+        videoWV.post(() -> {
+            videoWV.evaluateJavascript(scriptName, null);
+        });
     }
 
-
-    private void strangerMatched(MessageBean bean) {
-        try {
-            currBean = bean;
-            // System.out.println("INSIDE STRANGER MATCHED");
-//        startFrame.setVisibility(View.GONE);
-            loadingFrame.setVisibility(View.GONE);
-            mAdView.setVisibility(View.GONE);
-            TransitionManager.beginDelayedTransition(videoFrame, new Slide(Gravity.RIGHT));
-            videoFrame.setVisibility(View.VISIBLE);
-
-            //ownFaceFrame.setVisibility(View.VISIBLE);
-            setupWebView();
-
-
-            videoWV.setWebViewClient(new WebViewClient() {
-                @Override
-                public void onPageFinished(WebView view, String url) {
-                    callJavascriptFunction("javascript:init(" + bean.getMessageBody().isInitiator() + ")");
-                }
-            });
-            findViewById(R.id.swipeupView).setVisibility(View.GONE);
-            findViewById(R.id.swipeUpToSkipTW).setVisibility(View.GONE);
-
-            new Handler().postDelayed(() -> {
-                swipeListener = new SwipeListener(videoWV);
-                findViewById(R.id.swipeupView).setVisibility(View.VISIBLE);
-                findViewById(R.id.swipeUpToSkipTW).setVisibility(View.VISIBLE);
-            }, 5000);
-
-            timerTextHelper = new TimerTextHelper(findViewById(R.id.videoCallTimer));
-            timerTextHelper.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-            onException();
-        }
-
-
-    }
-
+//    @Override
+//    protected void onDestroy() {
+//        super.onDestroy();
+//        videoWV.clearCache(true);
+//        videoWV.clearHistory();
+//        videoWV.onPause();
+//        videoWV.removeAllViews();
+//        videoWV.destroyDrawingCache();
+//        videoWV.pauseTimers();
+//        videoWV = null;
+////        finish();
+//    }
 
     private void setupWebView() {
         System.out.println("Setup WV calling  TAG");
@@ -373,25 +476,11 @@ public class HomeActivity extends AppCompatActivity {
             public void next() {
                 try {
                     runOnUiThread(() -> {
-                        Toast.makeText(HomeActivity.this, "Loading next value", Toast.LENGTH_SHORT).show();
-//                        startFrame.setVisibility(View.GONE);
-                        loadingFrame.setVisibility(View.GONE);
-                        videoFrame.setVisibility(View.GONE);
-                        ownFaceFrame.setVisibility(View.GONE);
-                        TransitionManager.beginDelayedTransition(loadingFrame, new Slide(Gravity.BOTTOM));
-                        loadingFrame.setVisibility(View.VISIBLE);
-                        mAdView.setVisibility(View.VISIBLE);
-                        new Handler().postDelayed(() -> {
-                            startMatching();
-                        }, 5000);
-
+                        skipToNext();
                     });
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-
             }
 
             @Override
@@ -406,32 +495,31 @@ public class HomeActivity extends AppCompatActivity {
 
     }
 
-    private void callJavascriptFunction(String scriptName) {
-        System.out.println("---------------------------> Calling javascript  function");
-        videoWV.post(() -> {
-            videoWV.evaluateJavascript(scriptName, null);
-        });
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        videoWV.clearCache(true);
-        videoWV.clearHistory();
-        videoWV.onPause();
-        videoWV.removeAllViews();
-        videoWV.destroyDrawingCache();
-        videoWV.pauseTimers();
-        videoWV = null;
-//        finish();
-    }
-
     private void onException() {
-        Toast.makeText(HomeActivity.this, "Something went wrong with our end. Please try again later", Toast.LENGTH_LONG).show();
+        runOnUiThread(() -> {
+            Toast.makeText(HomeActivity.this, "Something went wrong with our end. Please try again later", Toast.LENGTH_LONG).show();
+            backToStartImpl();
+        });
+
     }
 
     private void onException(String msg) {
         Toast.makeText(HomeActivity.this, "" + msg, Toast.LENGTH_LONG).show();
+        backToStartImpl();
+    }
+
+    private void skipToNext() {
+
+        loadingFrame.setVisibility(View.GONE);
+        videoFrame.setVisibility(View.GONE);
+        ownFaceFrame.setVisibility(View.GONE);
+        TransitionManager.beginDelayedTransition(loadingFrame, new Slide(Gravity.BOTTOM));
+        loadingFrame.setVisibility(View.VISIBLE);
+        mAdView.setVisibility(View.VISIBLE);
+        videoWV.setOnTouchListener(null);
+        showInterstitialAd();
+        loadingMsgTW.setText("Waiting for match...");
+
     }
 
     public class SwipeListener implements View.OnTouchListener {
@@ -462,9 +550,9 @@ public class HomeActivity extends AppCompatActivity {
                                 if (Math.abs(xDiff) > Math.abs(yDiff)) {
                                     if (Math.abs(xDiff) > threshold && Math.abs(velocityX) > velocityThreshold) {
                                         if (xDiff > 0) {
-                                            Toast.makeText(HomeActivity.this, "R", Toast.LENGTH_LONG).show();
+//                                            Toast.makeText(HomeActivity.this, "R", Toast.LENGTH_LONG).show();
                                         } else {
-                                            Toast.makeText(HomeActivity.this, "L", Toast.LENGTH_LONG).show();
+//                                            Toast.makeText(HomeActivity.this, "L", Toast.LENGTH_LONG).show();
                                         }
 
                                         return true;
@@ -474,30 +562,15 @@ public class HomeActivity extends AppCompatActivity {
                                 } else {
                                     if (Math.abs(yDiff) > threshold && Math.abs(velocityY) > velocityThreshold) {
                                         if (yDiff > 0) {
-                                            Toast.makeText(HomeActivity.this, "D", Toast.LENGTH_LONG).show();
+//                                            Toast.makeText(HomeActivity.this, "D", Toast.LENGTH_LONG).show();
                                         } else {
                                             callJavascriptFunction("close()");
                                             runOnUiThread(() -> {
-                                                Toast.makeText(HomeActivity.this, "Loading next value", Toast.LENGTH_SHORT).show();
-//                        startFrame.setVisibility(View.GONE);
-                                                loadingFrame.setVisibility(View.GONE);
-                                                videoFrame.setVisibility(View.GONE);
-                                                ownFaceFrame.setVisibility(View.GONE);
-                                                TransitionManager.beginDelayedTransition(loadingFrame, new Slide(Gravity.BOTTOM));
-                                                loadingFrame.setVisibility(View.VISIBLE);
-                                                mAdView.setVisibility(View.VISIBLE);
-                                                videoWV.setOnTouchListener(null);
-                                                timerTextHelper.stop();
-
-                                                timerTextHelper = null;
-
-                                                new Handler().postDelayed(() -> {
-                                                    startMatching();
-                                                }, 5000);
+                                                skipToNext();
 
                                             });
 
-                                            Toast.makeText(HomeActivity.this, "U", Toast.LENGTH_LONG).show();
+//                                            Toast.makeText(HomeActivity.this, "U", Toast.LENGTH_LONG).show();
                                         }
 
                                         return true;

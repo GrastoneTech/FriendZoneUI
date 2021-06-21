@@ -78,7 +78,7 @@ function init(pInitiator){
           }
       })
 
-     // peer.on('error', (err) => {close();})
+      peer.on('error', (err) => {close();Android.next();})
     
 }
 

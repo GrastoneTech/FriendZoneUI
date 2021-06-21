@@ -22,7 +22,7 @@
             android:layout_margin="30dp"
 
             android:fontFamily="cursive"
-            android:text="friendzone"
+            android:text="@string/app_name"
             android:textColor="#fa4b3f"
             android:textSize="50dp" />
 

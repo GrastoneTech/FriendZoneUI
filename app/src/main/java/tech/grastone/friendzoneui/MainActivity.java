@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
             Intent startActivityIntent = new Intent(MainActivity.this, StartActivity.class);
             startActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(startActivityIntent);
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             finish();
         }, 3400);
 
