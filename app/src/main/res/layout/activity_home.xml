@@ -29,6 +29,7 @@
                 app:lottie_fileName="animated/arrow-left-icon.json"
                 app:lottie_loop="true" />
 
+
             <com.airbnb.lottie.LottieAnimationView
                 android:id="@+id/animationView"
                 android:layout_width="match_parent"
@@ -41,10 +42,19 @@
                 app:lottie_loop="true" />
 
             <TextView
+                android:id="@+id/onlineUserTW"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/animationView"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:text=""></TextView>
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/loadingMsgTW"
-                android:layout_below="@id/animationView"
+                android:layout_below="@id/onlineUserTW"
                 android:text="Waiting for match..."
                 android:layout_centerVertical="true"
                 android:layout_centerHorizontal="true"></TextView>

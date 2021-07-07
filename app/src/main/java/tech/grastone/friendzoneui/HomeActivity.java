@@ -10,6 +10,7 @@ import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -50,16 +51,17 @@ import okhttp3.WebSocketListener;
 import tech.grastone.friendzoneui.util.JSInterface;
 import tech.grastone.friendzoneui.util.MessageBean;
 import tech.grastone.friendzoneui.util.RequestBody;
-import tech.grastone.friendzoneui.util.Util;
 
 public class HomeActivity extends AppCompatActivity {
     private final int NEXT_VALUE_MIN = 3;
     private final int NEXT_VALUE_MAX = 7;
 
+    String serverHost = "";
+
 
     private FrameLayout loadingFrame, videoFrame, ownFaceFrame;
     private WebView videoWV;
-    private TextView loadingMsgTW;
+    String serverName = "";
 
     private LottieAnimationView backToStartLAV;
 
@@ -75,6 +77,12 @@ public class HomeActivity extends AppCompatActivity {
     private InterstitialAd interstitial;
     private int nextValue = getRandomInRange(NEXT_VALUE_MIN, NEXT_VALUE_MAX);
     private int counter = 0;
+    String serverBase = "";
+    String serverPort = "";
+    String serverProtocol = "";
+    String wsserverProtocol = "";
+    private int status = 0;
+    private TextView loadingMsgTW, onlineUserTw;
 
     public static int getRandomInRange(int start, int end) {
         //return start + new Random().nextInt(end - start + 1);
@@ -89,9 +97,17 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void createView() {
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         gson = new Gson();
         SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
         uuid = sharedPreferences.getString("UUID", "");
+        serverHost = sharedPreferences.getString("serverHost", "");
+        serverName = sharedPreferences.getString("serverName", "");
+        serverBase = sharedPreferences.getString("serverBase", "");
+        serverPort = sharedPreferences.getString("serverPort", "");
+        serverProtocol = sharedPreferences.getString("serverProtocol", "");
+        wsserverProtocol = sharedPreferences.getString("wsserverProtocol", "");
+
         setContentView(R.layout.activity_home);
         loadingFrame = findViewById(R.id.loadingFrame);
         videoFrame = findViewById(R.id.videoFrame);
@@ -99,6 +115,7 @@ public class HomeActivity extends AppCompatActivity {
         backToStartLAV = findViewById(R.id.backToStartLAV);
         videoWV = findViewById(R.id.videoWV);
         loadingMsgTW = findViewById(R.id.loadingMsgTW);
+        onlineUserTw = findViewById(R.id.onlineUserTW);
         loadingFrame.setVisibility(View.VISIBLE);
         videoFrame.setVisibility(View.GONE);
         ownFaceFrame.setVisibility(View.GONE);
@@ -114,7 +131,7 @@ public class HomeActivity extends AppCompatActivity {
         //  mAdView.setAdUnitId("ca-app-pub-8438566450366927/8505669966");
         AdRequest adRequest2 = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest2);
-        loadInterstitialAd();
+        // loadInterstitialAd();
 
 
         runOnUiThread(() -> {
@@ -269,7 +286,7 @@ public class HomeActivity extends AppCompatActivity {
 
             try {
                 String str = new Gson().toJson(bean);
-//                System.out.println("============================>" + str);
+                System.out.println("Calling============================>" + str);
                 webSocket.send(str);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -286,8 +303,10 @@ public class HomeActivity extends AppCompatActivity {
         try {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
             okHttpClient = builder.build();
+            String url = wsserverProtocol + "://" + serverHost + ":" + serverPort + serverBase + "/messenger/" + uuid;
             //Request request = new Request.Builder().url("ws://116.73.15.125:8080/LiveMatchingEngine/messenger/"+uuid).build();
-            Request request = new Request.Builder().url("ws://" + Util.BASE_PATH + "/messenger/" + uuid).build();
+            // Request request = new Request.Builder().url("ws://" + Util.BASE_PATH + "/messenger/" + uuid).build();
+            Request request = new Request.Builder().url(url).build();
             webSocket = okHttpClient.newWebSocket(request, new WebSocketListener() {
                 @Override
                 public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
@@ -353,25 +372,29 @@ public class HomeActivity extends AppCompatActivity {
 
     private void strangerMatched(MessageBean bean) {
         try {
-            currBean = bean;
-            loadingFrame.setVisibility(View.GONE);
-            mAdView.setVisibility(View.GONE);
-            TransitionManager.beginDelayedTransition(videoFrame, new Slide(Gravity.RIGHT));
-            videoFrame.setVisibility(View.VISIBLE);
-            setupWebView();
-            videoWV.setWebViewClient(new WebViewClient() {
-                @Override
-                public void onPageFinished(WebView view, String url) {
-                    callJavascriptFunction("javascript:init(" + bean.getMessageBody().isInitiator() + ")");
-                }
-            });
-            findViewById(R.id.swipeupView).setVisibility(View.GONE);
-            findViewById(R.id.swipeUpToSkipTW).setVisibility(View.GONE);
-            new Handler().postDelayed(() -> {
-                swipeListener = new SwipeListener(videoWV);
-                findViewById(R.id.swipeupView).setVisibility(View.VISIBLE);
-                findViewById(R.id.swipeUpToSkipTW).setVisibility(View.VISIBLE);
-            }, 5000);
+
+            if (status == 0) {
+                currBean = bean;
+                loadingFrame.setVisibility(View.GONE);
+                mAdView.setVisibility(View.GONE);
+                TransitionManager.beginDelayedTransition(videoFrame, new Slide(Gravity.RIGHT));
+                videoFrame.setVisibility(View.VISIBLE);
+                setupWebView();
+                videoWV.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public void onPageFinished(WebView view, String url) {
+                        callJavascriptFunction("javascript:init(" + bean.getMessageBody().isInitiator() + ")");
+                    }
+                });
+                findViewById(R.id.swipeupView).setVisibility(View.GONE);
+                findViewById(R.id.swipeUpToSkipTW).setVisibility(View.GONE);
+                new Handler().postDelayed(() -> {
+                    swipeListener = new SwipeListener(videoWV);
+                    findViewById(R.id.swipeupView).setVisibility(View.VISIBLE);
+                    findViewById(R.id.swipeUpToSkipTW).setVisibility(View.VISIBLE);
+                }, 5000);
+                status = 1;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             onException();
@@ -382,7 +405,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void messageHandler(String text) {
         //Waiting for reponse
-        //System.out.println("Message recieved-------------------------" + text);
+        System.out.println("Message recieved-------------------------" + text);
         try {
             MessageBean bean = gson.fromJson(text, MessageBean.class);
             if (bean.getMessageBody() != null) {
@@ -401,6 +424,16 @@ public class HomeActivity extends AppCompatActivity {
                     case "SHARING_SDP":
                         runOnUiThread(() -> {
                             recieveSDP(bean);
+                            //Toast.makeText(HomeActivity.this, "You have matched with == " + bean.getMessageBody().getMatchedWith(), Toast.LENGTH_SHORT).show();
+                        });
+                        break;
+
+                    case "ONLINE_USERS":
+                        runOnUiThread(() -> {
+                            onlineUserTw.setText("Online Users : " + bean.getMessageBody().getMsgText());
+
+                            //System.out.println("ONLINE USER ====="+bean.getMessageBody().getMsgText());
+                            // recieveSDP(bean);
                             //Toast.makeText(HomeActivity.this, "You have matched with == " + bean.getMessageBody().getMatchedWith(), Toast.LENGTH_SHORT).show();
                         });
                         break;
@@ -510,6 +543,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private void skipToNext() {
 
+        status = 0;
         loadingFrame.setVisibility(View.GONE);
         videoFrame.setVisibility(View.GONE);
         ownFaceFrame.setVisibility(View.GONE);

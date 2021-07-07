@@ -23,6 +23,23 @@ function init(pInitiator){
             video.play();
             console.log("Streamed started....");
             video.style.opacity=1;
+
+//            video.width = screen.width;
+//            video.height = screen.height;
+
+//            setInterval(function(){
+//                nude.load('remote');
+//                nude.scan(function(result){
+//                    if(!result){
+//                        //document.getElementById('result5').innerHTML='No nude!!';
+//                        console.log("No Nudity detected")
+//                     }else{
+//                        //document.getElementById('result5').innerHTML='Nude!!';
+//                        console.log("Nudity detected")
+//                     }
+//                  });
+//            },5000)
+
          }catch(e){
             console.log(e)
             Android.onException();

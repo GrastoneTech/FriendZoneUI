@@ -15,6 +15,7 @@
 .secondary-cam {
 	position: fixed;
 	width: 20%;
+	box-shadow: 2px 2px #888888;
 	/*height:30%;*/
 }
 

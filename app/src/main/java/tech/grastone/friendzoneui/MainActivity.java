@@ -4,9 +4,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -19,11 +19,11 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import tech.grastone.friendzoneui.util.Util;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -33,10 +33,10 @@ public class MainActivity extends AppCompatActivity {
     private String serverURL;
     private TextView splashName;
     private LottieAnimationView animationView;
-
+    private SharedPreferences sharedPreferences = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
+        sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         splashName = findViewById(R.id.frienzoneTW);
@@ -46,15 +46,29 @@ public class MainActivity extends AppCompatActivity {
         basicReadWrite();
 
         // loadParams();
-        SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref", MODE_PRIVATE);
+        //startup();
+
+    }
+
+    private void startup() {
+
         String uuid = sharedPreferences.getString("UUID", "");
+        String serverHost = sharedPreferences.getString("serverHost", "");
+        String serverName = sharedPreferences.getString("serverName", "");
+        String serverBase = sharedPreferences.getString("serverBase", "");
+        String serverPort = sharedPreferences.getString("serverPort", "");
+        String serverProtocol = sharedPreferences.getString("serverProtocol", "");
+        String wsserverProtocol = sharedPreferences.getString("wsserverProtocol", "");
         OkHttpClient client = new OkHttpClient();
 
 
         if (uuid.equals("")) {
             new Thread(() -> {
                 //Request request = new Request.Builder().url("http://116.73.15.125:8080/LiveMatchingEngine/GetUniqueId").build();
-                Request request = new Request.Builder().url("http://" + Util.BASE_PATH + "/GetUniqueId").build();
+//                Request request = new Request.Builder().url("http://" + Util.BASE_PATH + "/GetUniqueId").build();
+                String url = serverProtocol + "://" + serverHost + ":" + serverPort + serverBase + "/GetUniqueId";
+                System.out.println("URL==" + url);
+                Request request = new Request.Builder().url(url).build();
                 String uniqueId = "";
                 try (Response response = client.newCall(request).execute()) {
                     uniqueId = response.body().string();
@@ -78,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             finish();
         }, 3400);
-
     }
 
     public void basicReadWrite() {
@@ -94,12 +107,34 @@ public class MainActivity extends AppCompatActivity {
                 HashMap<String, Object> dataMap = (HashMap<String, Object>) dataSnapshot.getValue();
                 System.out.println("111111111111111111111111111111111111111111" + dataMap);
 
+                String serverHost = (String) ((Map) dataMap.get("configuration")).get("server-host");
+                String serverName = (String) ((Map) dataMap.get("configuration")).get("server-name");
+                String serverBase = (String) ((Map) dataMap.get("configuration")).get("server-base");
+                String serverPort = (String) ((Map) dataMap.get("configuration")).get("server-port") + "";
+                String serverProtocol = (String) ((Map) dataMap.get("configuration")).get("server-protocol");
+                String wsserverProtocol = (String) ((Map) dataMap.get("configuration")).get("wsserver-protocol");
+
+                SharedPreferences.Editor myEdit = sharedPreferences.edit();
+                //{configuration={server-host=34.134.207.126, server-name=friendzone, server-base=/LiveMatchinEngine, wsserver-protocol=ws, server-port=80, server-protocol=http}}
+                myEdit.putString("serverHost", serverHost);
+                myEdit.putString("serverName", serverName);
+                myEdit.putString("serverBase", serverBase);
+                myEdit.putString("serverPort", serverPort);
+                myEdit.putString("serverProtocol", serverProtocol);
+                myEdit.putString("wsserverProtocol", wsserverProtocol);
+                myEdit.commit();
+
+                startup();
+
+                // System.out.println("111111111111111111111111111111111111111111serverHost" + serverHost);
+
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
-                // Failed to read value
-                Log.w("TAG", "Failed to read value.", error.toException());
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Something went wrong. Pease check internet connection", Toast.LENGTH_SHORT).show();
+                });
             }
         });
         // [END read_message]
